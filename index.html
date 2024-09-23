@@ -115,39 +115,61 @@
             event.preventDefault()
             
             try:
-                absences = int(Element('absences').element.value)
-                prelim_exam = float(Element('prelim_exam').element.value)
-                quizzes = float(Element('quizzes').element.value)
-                requirements = float(Element('requirements').element.value)
-                recitation = float(Element('recitation').element.value)
-
-                if absences < 0 or any(grade < 0 or grade > 100 for grade in [prelim_exam, quizzes, requirements, recitation]):
-                    raise ValueError("Invalid input. Please check your entries.")
-
+                absences = Element('absences').element.value
+                prelim_exam = Element('prelim_exam').element.value
+                quizzes = Element('quizzes').element.value
+                requirements = Element('requirements').element.value
+                recitation = Element('recitation').element.value
+        
+                # Input validation
+                if not absences.isdigit():
+                    raise ValueError("Number of absences must be a non-negative integer.")
+                absences = int(absences)
+        
+                error_messages = []
+                for grade_name, grade_value in [("Prelim Exam", prelim_exam), 
+                                                ("Quizzes", quizzes), 
+                                                ("Requirements", requirements), 
+                                                ("Recitation", recitation)]:
+                    try:
+                        grade = float(grade_value)
+                        if grade < 0 or grade > 100:
+                            error_messages.append(f"{grade_name} grade must be between 0 and 100.")
+                    except ValueError:
+                        error_messages.append(f"{grade_name} grade must be a number between 0 and 100.")
+        
+                if error_messages:
+                    raise ValueError("<br>".join(error_messages))
+        
+                prelim_exam = float(prelim_exam)
+                quizzes = float(quizzes)
+                requirements = float(requirements)
+                recitation = float(recitation)
+        
                 if absences >= 4:
                     result = "I am sorry, but since you have 4 or more absences, you are considered to have a failed grade"
                 else:
                     attendance = 100 - (10 * absences)
                     class_standing = (quizzes * 0.40) + (requirements * 0.30) + (recitation * 0.30)
                     prelim_grade = (prelim_exam * 0.60) + (attendance * 0.10) + (class_standing * 0.30)
-
+        
                     result = f"Your Prelim Grade is: {prelim_grade:.2f}<br><br>"
-
+        
                     def calculate_required_grades(target_grade):
                         remaining = target_grade - (0.20 * prelim_grade)
                         required_grade = remaining / 0.80
                         return None if required_grade > 100 else required_grade
-
+        
                     passing_grade = calculate_required_grades(75)
                     deans_list_grade = calculate_required_grades(90)
-
+        
                     if passing_grade is None:
                         result += "Sorry, but it is impossible for you to pass the course with your current Prelim grade."
                     else:
                         result += f"To pass the course with an overall grade of 75, you need at least:<br>"
                         result += f"Midterm grade: {passing_grade:.2f}<br>"
                         result += f"Final grade: {passing_grade:.2f}<br><br>"
-
+        
                     if prelim_grade < 70:
                         result += "Sorry, but it is not possible for you to achieve Dean's lister at all even if you ace your midterms and finals. Better luck next time."
                     elif deans_list_grade is not None:
@@ -155,18 +177,18 @@
                         result += f"Now, you only need to have a midterm grade of {deans_list_grade:.2f} and a final grade of {deans_list_grade:.2f}. Good luck!"
                     else:
                         result += "It is not possible to achieve Dean's lister status with your current Prelim grade."
-
+        
             except ValueError as e:
                 result = f'<span style="color: red;">{str(e)}</span>'
             
             result_element = Element('result')
             result_element.element.innerHTML = result
             result_element.element.style.display = "block"
-
+        
         def setup():
             Element('gradeForm').element.onsubmit = calculate_grades
-
+        
         setup()
-    </py-script>
+        </py-script>        
 </body>
 </html>
