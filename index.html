@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grade Calculator</title>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #6b5b95;
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            background-color: #ffffff;
+            padding: 35px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-size: 18px;
+            color: #015d00;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #6b5b95;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: Verdana, sans-serif;
+        }
+
+        input[type="submit"] {
+            background-color: #ff6f61;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: Verdana, sans-serif;
+            font-size: 18px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #ff8561;
+        }
+
+        .result {
+            background-color: #ffffff;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .result p {
+            color: #015d00;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .error {
+            color: red;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <link rel="icon" href="images/calc.jpg" type="image/jpeg" sizes="96x96"/>
+</head>
+
+<body>
+    <h1>Grade Calculator</h1>
+    <form id="gradeForm">
+        <label for="absences">Number of absences:</label>
+        <input type="text" id="absences" name="absences" required min="0" step="1">
+
+        <label for="prelim_exam">Prelim Exam grade:</label>
+        <input type="text" id="prelim_exam" name="prelim_exam" required min="0" max="100" step="0.01">
+
+        <label for="quizzes">Quizzes grade:</label>
+        <input type="text" id="quizzes" name="quizzes" required min="0" max="100" step="0.01">
+
+        <label for="requirements">Requirements grade:</label>
+        <input type="text" id="requirements" name="requirements" required min="0" max="100" step="0.01">
+
+        <label for="recitation">Recitation grade:</label>
+        <input type="text" id="recitation" name="recitation" required min="0" max="100" step="0.01">
+
+        <input type="submit" value="Calculate" id="calculateButton" />
+    </form>
+
+    <div id="result" class="result" style="display: none"></div>
+
+    <py-script>
+        def calculate_grades(event):
+            event.preventDefault()
+            
+            try:
+                absences = int(Element('absences').element.value)
+                prelim_exam = float(Element('prelim_exam').element.value)
+                quizzes = float(Element('quizzes').element.value)
+                requirements = float(Element('requirements').element.value)
+                recitation = float(Element('recitation').element.value)
+
+                if absences < 0 or any(grade < 0 or grade > 100 for grade in [prelim_exam, quizzes, requirements, recitation]):
+                    raise ValueError("Invalid input. Please check your entries.")
+
+                if absences >= 4:
+                    result = "I am sorry, but since you have 4 or more absences, you are considered to have a failed grade"
+                else:
+                    attendance = 100 - (10 * absences)
+                    class_standing = (quizzes * 0.40) + (requirements * 0.30) + (recitation * 0.30)
+                    prelim_grade = (prelim_exam * 0.60) + (attendance * 0.10) + (class_standing * 0.30)
+
+                    result = f"Your Prelim Grade is: {prelim_grade:.2f}<br><br>"
+
+                    def calculate_required_grades(target_grade):
+                        remaining = target_grade - (0.20 * prelim_grade)
+                        required_grade = remaining / 0.80
+                        return None if required_grade > 100 else required_grade
+
+                    passing_grade = calculate_required_grades(75)
+                    deans_list_grade = calculate_required_grades(90)
+
+                    if passing_grade is None:
+                        result += "Sorry, but it is impossible for you to pass the course with your current Prelim grade."
+                    else:
+                        result += f"To pass the course with an overall grade of 75, you need at least:<br>"
+                        result += f"Midterm grade: {passing_grade:.2f}<br>"
+                        result += f"Final grade: {passing_grade:.2f}<br><br>"
+
+                    if prelim_grade < 70:
+                        result += "Sorry, but it is not possible for you to achieve Dean's lister at all even if you ace your midterms and finals. Better luck next time."
+                    elif deans_list_grade is not None:
+                        result += f"Congratulations! You've qualified for Dean's lister.<br>"
+                        result += f"Now, you only need to have a midterm grade of {deans_list_grade:.2f} and a final grade of {deans_list_grade:.2f}. Good luck!"
+                    else:
+                        result += "It is not possible to achieve Dean's lister status with your current Prelim grade."
+
+            except ValueError as e:
+                result = f'<span style="color: red;">{str(e)}</span>'
+            
+            result_element = Element('result')
+            result_element.element.innerHTML = result
+            result_element.element.style.display = "block"
+
+        def setup():
+            Element('gradeForm').element.onsubmit = calculate_grades
+
+        setup()
+    </py-script>
+</body>
+</html>
